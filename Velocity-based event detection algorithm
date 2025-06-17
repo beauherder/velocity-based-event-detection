@@ -1,12 +1,26 @@
 In this document you find the instruction and algorithm to customize velocity-based even detection as described bij K. Holmqvist et al. (2011).
 The first step is customized for my dataset, but illustrates how to prepare raw data for step 2.  The "pro" prefix reverse to the prosaccade task in my study. 
-
+Look out for #---> TO DO, this signals instructions for customizations 
 
 Prep:
 
+# Prep 1: creating paths and folders for document management
+# The following code creates folders, "ProcessedData" to save data and plots
+# and "RawData" that contains the raw data files
+
 path <- "U:/My Documents/Master_Thesis/Huidig dataverwerking"
 dir.create(paste0(path, "/ProcessedData"))
-OutputPath <- paste(path, "ProcessedData",sep="/")
+dir.create(paste0(path, "/RawData"))
+OutputPath <- paste(path, "ProcessedData",sep="/"
+RawDataPath <- paste(path, "RawData",sep="/")
+
+#---> TO DO: add the raw data files to the folder "RawData"
+
+# prep 2: read in data
+
+prosaccade_files <- list.files(PRawDataPath,
+                               pattern = "\\.csv$",
+                               full.names = TRUE)
 
 ################### Step 1: Preprocessing data ###################
 ## Step 1.1: Make Prosaccade item list
