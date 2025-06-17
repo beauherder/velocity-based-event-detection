@@ -1,0 +1,13 @@
+Abstract
+
+Using webcams for eye tracking could enable eye-tracking in classrooms, which allows teachers to tailor their instructions and support to the individual learning 
+process of each student. To advance the eye-tracking research field towards that goal, more information is needed on the quality of webcam-based eye-tracking 
+data and the validity of measuring specific relations between specific gaze patterns and cognitive processes. This study aims to contribute by quantifying the 
+relation between data collected with a dedicated eye tracker and a webcam. Therefore, this study compared webcam-based eye-tracking data and dedicated eye-tracking 
+data in terms of data quality, saccade detection, and performed a correlational analysis on the gaze patterns detected in both types of data. The results show that 
+data quality, mainly in terms of precision and sampling rate, is inferior to that of a dedicated eye tracker. Saccade detection is feasible with the custom 
+velocity-based saccade detection algorithm, even with the lower data quality, especially for longer, horizontal saccades. Vertical, shorter saccade detection is 
+possible but has limits; therefore, the recommended minimum stimulus size is 17.5 x 8.5 cm. A significant correlation was found between the gaze patterns detected 
+in the webcam-based eye-tracking data and the dedicated eye-tracking data.
+
+Keywords: Eye tracking, webcam, comparison, velocity-based event detection, correlation
