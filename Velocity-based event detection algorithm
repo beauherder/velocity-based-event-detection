@@ -1,54 +1,98 @@
-In this document you find the instruction and algorithm to customize velocity-based even detection as described bij K. Holmqvist et al. (2011).
-The first step is customized for my dataset, but illustrates how to prepare raw data for step 2.  The "pro" prefix reverse to the prosaccade task in my study. 
-Look out for #---> TO DO, this signals instructions for customizations 
+#In this document you find the instruction and algorithm to customize velocity-based even detection as described bij K. Holmqvist et al. (2011).
+#The first step is customized for my dataset, but illustrates how to prepare raw data for step 2.  The "pro" prefix reverse to the prosaccade task in my study. 
+#Look out for #---> TO DO, this signals instructions for customizations 
 
-Prep:
+#Packages necassary
+install.packages("tidyverse")  # Run this once
+library(tidyverse)             # Load all tidyverse packages
+install.packages("plyr")  # Run once to install
+library(plyr)             # Load it each session
+install.packages("pracma")  # Install once
+library(pracma)             # Load each session
+library(patchwork)
 
+#Prep:
+  
 # Prep 1: creating paths and folders for document management
 # The following code creates folders, "ProcessedData" to save data and plots
 # and "RawData" that contains the raw data files
 
-path <- "U:/My Documents/Master_Thesis/Huidig dataverwerking"
+#---> TO DO: adjust the path 
+
+path <- "U:/My Documents/Master_Thesis/Github test"
 dir.create(paste0(path, "/ProcessedData"))
 dir.create(paste0(path, "/RawData"))
-OutputPath <- paste(path, "ProcessedData",sep="/"
+OutputPath <- paste(path, "ProcessedData",sep="/")
 RawDataPath <- paste(path, "RawData",sep="/")
-
+                    
 #---> TO DO: add the raw data files to the folder "RawData"
+                    
+# prep 2: read in and organize data
+prosaccade_files <- list.files(RawDataPath,
+                                                   pattern = "\\.csv$",
+                                                   full.names = TRUE)
+prosaccade_raw_data <- do.call(rbind.fill,
+                               lapply(prosaccade_files,
+                                      function(file) {
+                                        data <- read_csv(file, show_col_types = FALSE)
+                                        data$file <- basename(file)
+                                        return(data)
+                                      }))
 
-# prep 2: read in data
+## prep 2.1: Filter for prediction rows and select relevant columns
+#---> TO DO: these are column names from ET data collected using the Gorilla platform
+# check the column names in prosaccade_raw_data and adjust the selected column names column 
+prosaccade_prediction_data <- prosaccade_raw_data %>%
+  filter(Type == "prediction") %>%
+  select(
+    file,
+    Participant = `Participant Private ID`,
+    Elapsed,
+    Prosaccade_Number = `Spreadsheet Index`,
+    Gaze_X            = `Predicted Gaze X`,
+    Gaze_Y            = `Predicted Gaze Y`
+  )
+rm(prosaccade_raw_data)
 
-prosaccade_files <- list.files(PRawDataPath,
-                               pattern = "\\.csv$",
-                               full.names = TRUE)
+## prep 3: define variables
 
+#Define variables for monitor dimensions, resolution and distance from monitor
+#---> TO DO: change the values for these variables to fit the monitor and setup
+h <- 29.7     # Monitor height in cm
+w <- 52.8     # Monitor width in cm
+d <- 59       # Distance between monitor and participant in cm
+
+res_v <- 1080 # Vertical resolution of the monitor
+res_h <- 1920 # Horizontal resolution of the monitor
+
+#Calculate the number of degrees that correspond to a single pixel
+deg_per_px_hor <- rad2deg(atan2(0.5 * w, d)) / (0.5 * res_h)
+deg_per_px_ver<- rad2deg(atan2(0.5 * h, d)) / (0.5 * res_v)
+
+                    
 ################### Step 1: Preprocessing data ###################
-## Step 1.1: Make Prosaccade item list
+                    
+## Step 1.1: Make Prosaccade item list and split it
 pro_items_list <- split(prosaccade_prediction_data,
-                        prosaccade_prediction_data$Prosaccade_Number)
-
-for (i in names(pro_items_list)) {
-  assign(paste0("pro_item_", i), pro_items_list[[i]])
-}
-
+                  prosaccade_prediction_data$Prosaccade_Number)
+                    
+    for (i in names(pro_items_list)) {
+    assign(paste0("pro_item_", i), pro_items_list[[i]])
+                    }
+                    
 ## Step 1.2: we make a number of lists to use for saccade detection.
 List_ppn = unique(prosaccade_prediction_data$Participant)#make a list of participants
 List_trials = unique(prosaccade_prediction_data$Prosaccade_Number)#make a list of trials
-list_hor <- c(3, 4, 11, 12, 1, 2, 9, 10) #make a list of horizontal trials
-list_ver <- c(5,6,13,14,7,8,15,16)#make a list of vertical trials
-
-## Step 1.3: getting the saccades.
-### Step 1.3.1: the prediction data is split up per prosaccade.
-pro_items_list <- split(prosaccade_prediction_data,
-                        prosaccade_prediction_data$Prosaccade_Number)
-
-for (i in names(pro_items_list)) {
-  assign(paste0("pro_item_", i), pro_items_list[[i]])
-}
+list_hor <- c(4) #make a list of horizontal trials
+list_ver <- c(5)#make a list of vertical trials
+#---> TO DO: adjust the item numbers when                     
 
 ################### Step 2: Calculating velocity and apply velocity threshold (usually within 30-100°/s) ###################
 ## Step 2.1: Running through the dataframes per prosaccade and calculate the parameters; 
-##this is were the velocity-based even detection takes place. 
+for (j in List_trials) {
+  message("Bezig met: ", j)
+}
+## this is were the velocity-based even detection takes place. 
 for (j in List_trials) {
   df <- get(paste0("pro_item_", j)) %>%
     arrange(Participant, file, Elapsed) %>%
@@ -68,11 +112,13 @@ for (j in List_trials) {
     ) %>%
     ungroup()
   assign(paste0("pro_item_", j), df)
+  
+}
 
 ## Step 2.2: now we know whether a sample is part of a saccade or not, we can extract the saccades.
 ### Step 2.2.1: Group per participant for saccade event segmentation
 pro_saccade_events_list <- list()
-for (i in List_trials) {
+  for (i in List_trials) {
   grouped <- get(paste0("pro_item_", i)) %>%
     group_by(Participant, file) %>%
     group_split()
@@ -107,98 +153,106 @@ for (i in List_trials) {
 
 ### Step 2.2.2: get them all in a dataframe, this gives all saccades per trial per person
 pro_saccade_events_df <- bind_rows(pro_saccade_events_list)
-
+                      
 ################### Step 3: create plots for manual inspection or validation of chosen threshold ###################
 ## Step 3.1 making individual gaze plots with x over time and y over time next to it.
-dir.create(paste0(OutputPath, "/Images2"))
-
+dir.create(paste0(OutputPath, "/Images"))
+                      
 ## Step 3.2 for horizontal saccades.
 for (j in list_hor) { #for each item
-  for (i in List_ppn)   {    # for each participant....
-    
-    pdfname = paste(OutputPath,"/Images2", sep = "") #location of the pdf
-    
-    AdvETUploadData_00 <- get(paste0("pro_item_", j)) %>%
-      filter(Participant == i)
-    
-    # This is a raw data plot (one point per sample) with dots colored to represent whether this is a saccade or not
-    rawplot1 <- AdvETUploadData_00 %>%
-      ggplot(aes(Gaze_X, Gaze_Y, xmin = 0, xmax = res_h, ymin = 0, ymax = res_v, color = is_saccade))  + #note that xmax and ymax are specified to give some space around the box with good data. If values are higher, they aren't shown
-      # geom_rect(xmin = 0, xmax = 1, ymin = 0, ymax = 1, fill = 'white', color = 'darkgrey')+ #This draws a rectangle the size of the screen
-      theme_classic()+
-      geom_point()+
-      geom_point(size = 1.0) +
-      scale_x_continuous(name="x") + 
-      scale_y_continuous(name="y") +coord_fixed() + 
-      #  facet_wrap(~file)+
-      theme(text = element_text(size = 20)) +
-      ggtitle(i)
-    
-    rawplot2 <- # X-over time plot for 2.5 seconds
-      AdvETUploadData_00 %>%
-      ggplot(aes(Elapsed, Gaze_X, ymin = 0, ymax = res_h)) +geom_line()+ 
-      xlim(000,2500)+
-      facet_wrap(~file)
-    print (paste0("img_item",j,"_ppn", i, ".pdf")) 
-    combined_plot <- rawplot1 | rawplot2 
-    combined_plot
-    # save the combined plot
-    
-    ggsave(filename = paste0("img_item",j,"_ppn", i, ".pdf"),
-           plot = combined_plot,
-           path = pdfname, 
-           width = 12,      # increase width (in inches)
-           height = 8,      # increase height (in inches)
-           device = "pdf")
-    
+for (i in List_ppn)   {    # for each participant....
+                          
+pdfname = paste(OutputPath,"/Images2", sep = "") #location of the pdf
+                          
+AdvETUploadData_00 <- get(paste0("pro_item_", j)) %>%
+                        filter(Participant == i)
+                          
+# This is a raw data plot (one point per sample) with dots colored to represent whether this is a saccade or not
+rawplot1 <- AdvETUploadData_00 %>%
+	ggplot(aes(Gaze_X, Gaze_Y, xmin = 0, xmax = res_h, ymin = 0, ymax = res_v, color = is_saccade))  + 
+
+  #note that xmax and ymax are specified to give some space around the box with good data. If values are higher, they aren't shown
+#geom_rect(xmin = 0, xmax = 1, ymin = 0, ymax = 1, fill = 'white', color = 'darkgrey')+ #This draws a rectangle the size of the screen
+   theme_classic()+
+   geom_point()+
+   geom_point(size = 1.0) +
+   scale_x_continuous(name="x") + 
+   scale_y_continuous(name="y") +coord_fixed() + 
+   #  facet_wrap(~file)+
+   theme(text = element_text(size = 20)) +
+   ggtitle(i)
+                          
+ rawplot2 <- # X-over time plot for 2.5 seconds
+             AdvETUploadData_00 %>%
+     	     ggplot(aes(Elapsed, Gaze_X, ymin = 0, ymax = res_h)) +geom_line()+ 
+             xlim(000,2500)+
+             facet_wrap(~file)
+           
+print (paste0("img_item",j,"_ppn", i, ".pdf")) 
+
+combined_plot <- rawplot1 | rawplot2 
+combined_plot
+
+# save the combined plot
+                          
+ ggsave(filename = paste0("img_item",j,"_ppn", i, ".pdf"),
+                           plot = combined_plot,
+                           path = pdfname, 
+                           width = 12,      # increase width (in inches)
+                           height = 8,      # increase height (in inches)
+                           device = "pdf")
+                          
   }
 }
-
+                      
 ## Step 3.3: for vertical saccades.
 for (j in list_ver) { #for each item
-  for (i in List_ppn)   {    # for each participant....
-    
-    pdfname = paste(OutputPath,"/Images2", sep = "") #location of the pdf
-    
-    AdvETUploadData_00 <- get(paste0("pro_item_", j)) %>%
-      filter(Participant == i)
-    
-    # This is a raw data plot (one point per sample) with dots colored to represent whether this is a saccade or not
-    rawplot1 <- AdvETUploadData_00 %>%
-      ggplot(aes(Gaze_X, Gaze_Y, xmin = 0, xmax = res_h, ymin = 0, ymax = res_v, color = is_saccade))  + #note that xmax and ymax are specified to give some space around the box with good data. If values are higher, they aren't shown
-      # geom_rect(xmin = 0, xmax = 1, ymin = 0, ymax = 1, fill = 'white', color = 'darkgrey')+ #This draws a rectangle the size of the screen
-      theme_classic()+
-      geom_point()+
-      geom_point( size = 1.0) +
-      scale_x_continuous(name="x") + 
-      scale_y_continuous(name="y") +coord_fixed() + 
-      #  facet_wrap(~file)+
-      theme(text = element_text(size = 20)) +
-      ggtitle(i)
-    
-    rawplot2 <- # Y-over time plot for 2.5 seconds
-      AdvETUploadData_00 %>%
-      ggplot(aes(Elapsed, Gaze_Y, ymin = 0, ymax = res_h)) +geom_line()+ 
-      xlim(000,2500)+
-      facet_wrap(~file)
-    
-    print (paste0("img_item",j,"_ppn", i, ".pdf"))
-    combined_plot <- rawplot1 | rawplot2 
-    combined_plot
-    # Now save it
-    
-    ggsave(filename = paste0("img_item_",j,"_ppn", i, ".pdf"),
-           plot = combined_plot,
-           path = pdfname, 
-           width = 12,      # increase width (in inches)
-           height = 8,      # increase height (in inches)
-           device = "pdf")
-    
-  }
-}
+for (i in List_ppn)   {    # for each participant....
+                          
+                     pdfname = paste(OutputPath,"/Images2", sep = "") #location of the pdf
+                          
+AdvETUploadData_00 <- get(paste0("pro_item_", j)) %>%
+                          filter(Participant == i)
+                          
+# This is a raw data plot (one point per sample) with dots colored to represent whether this is a saccade or not
+rawplot1 <- AdvETUploadData_00 %>%
+            ggplot(aes(Gaze_X, Gaze_Y, xmin = 0, xmax = res_h, ymin = 0, ymax = res_v, color = is_saccade))  + 
 
+#note that xmax and ymax are specified to give some space around the box with good data. If values are higher, they aren't shown
+# geom_rect(xmin = 0, xmax = 1, ymin = 0, ymax = 1, fill = 'white', color = 'darkgrey')+ 
+#This draws a rectangle the size of the screen
+            theme_classic()+
+            geom_point()+
+            geom_point( size = 1.0) +
+            scale_x_continuous(name="x") + 
+            scale_y_continuous(name="y") +coord_fixed() + 
+            facet_wrap(~file)+
+            theme(text = element_text(size = 20)) +
+            ggtitle(i)
+                          
+rawplot2 <- # Y-over time plot for 2.5 seconds
+           AdvETUploadData_00 %>%
+           ggplot(aes(Elapsed, Gaze_Y, ymin = 0, ymax = res_h)) +geom_line()+ 
+           xlim(000,2500)+
+           facet_wrap(~file)                         
+                         
+print (paste0("img_item",j,"_ppn", i, ".pdf"))
+                          
+combined_plot <- rawplot1 | rawplot2 
+combined_plot
+                          
+# Now save it
+                          
+ggsave(filename = paste0("img_item_",j,"_ppn", i, ".pdf"),
+       plot = combined_plot,
+       path = pdfname, 
+       width = 12,      # increase width (in inches)
+       height = 8,      # increase height (in inches)
+       device = "pdf")
+                          
+    }
+}
+                      
 ################### Step 4: check if the threshold filters out noise in data ###################
 # Plot raw gaze data, gaze velocity, and the resulting saccade classifications to visually validate whether the chosen threshold and filtering are appropriate.
 # If the data still takes too much noise into account or does not find saccades, adjust the threshold in the code for step 2 and repeat step 2, 3 and 4. 
-
-
